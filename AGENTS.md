@@ -10,7 +10,11 @@ This file defines repo-specific rules for future agents working on this MVP.
   - `src/components/Header.tsx`
   - `src/components/Sidebar.tsx`
   - `src/components/CanvasArea.tsx`
-- Shared first-screen values live in `src/constants/firstScreenTokens.ts`.
+- Development panel (Dev Mode):
+  - Accessible via Settings icon or `⌘D`
+  - Stores live design overrides in localStorage (`anymate-dev-overrides`)
+  - Files: `src/components/DevPanel.tsx`, `src/context/DevModeContext.tsx`
+- Shared first-screen design values live in `src/constants/firstScreenTokens.ts` (consumed as defaults by DevMode context).
 - Local first-screen assets live in `src/constants/firstScreenAssets.ts` and `src/assets/first-screen/`.
 
 ## Source Of Truth
@@ -56,8 +60,8 @@ This file defines repo-specific rules for future agents working on this MVP.
 - Run:
   - `npm run build`
   - `npm run lint`
-- Scan for forbidden asset URLs:
-  - `rg -n "localhost:3845|figma.com/api/mcp/asset" src dist`
+- Scan for forbidden asset URLs (using grep):
+  - `grep -rn "localhost:3845\|figma.com/api/mcp/asset" src/ dist/`
 - If assets or layout changed, do a quick visual sanity check against the relevant Figma node.
 
 ## Notes For Future Sessions
