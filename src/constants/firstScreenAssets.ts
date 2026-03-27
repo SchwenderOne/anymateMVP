@@ -1,4 +1,5 @@
 import breadcrumbChevron from '../assets/first-screen/breadcrumb-chevron.svg';
+import characterShaman from '../assets/first-screen/character-shaman.png';
 import createCharacterIcon from '../assets/first-screen/create-character-icon.svg';
 import dropdownChevron from '../assets/first-screen/dropdown-chevron.svg';
 import editIcon from '../assets/first-screen/edit-icon.svg';
@@ -44,6 +45,7 @@ export const FIRST_SCREEN_ASSETS = {
     },
   },
   canvas: {
+    characterShaman,
     editIcon,
     gridIcon,
     shieldIcon,

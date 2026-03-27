@@ -95,6 +95,14 @@ export function CanvasArea() {
       <EditControl />
       <ZoomControl />
 
+      <div className="absolute inset-0 z-[2] flex items-center justify-center pointer-events-none px-10">
+        <img
+          src={canvasAssets.characterShaman}
+          alt="Shaman character"
+          className="w-full max-w-[420px] h-auto object-contain drop-shadow-[0_22px_40px_rgba(0,0,0,0.16)]"
+        />
+      </div>
+
       {/* Bottom Right Info Button */}
       <div
         className="absolute bottom-6 right-4 rounded-full w-[44px] h-[44px] flex items-center justify-center shadow-sm z-10 transition-colors cursor-pointer"

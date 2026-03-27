@@ -74,8 +74,6 @@ function RoundIconButton({ src, alt, iconClassName, onClick }: RoundIconButtonPr
 }
 
 function HeaderActions() {
-  const { toggle } = useDevMode();
-
   return (
     <div className="flex items-center justify-end gap-[15px] w-[300px]">
       <button className="relative w-[86px] h-[49px] flex items-center justify-center">
@@ -85,12 +83,31 @@ function HeaderActions() {
         </span>
       </button>
       <RoundIconButton src={headerAssets.playIcon} alt="Play" iconClassName="w-[15px] h-[15px] object-contain ml-0.5" />
-      <RoundIconButton src={headerAssets.settingsIcon} alt="Settings" iconClassName="w-[20px] h-[19px] object-contain" onClick={toggle} />
+      <RoundIconButton src={headerAssets.settingsIcon} alt="Settings" iconClassName="w-[20px] h-[19px] object-contain" />
     </div>
   );
 }
 
-export function Header() {
+type HeaderProps = {
+  onSettingsClick?: () => void;
+};
+
+function HeaderActionsWithSettings({ onSettingsClick }: HeaderProps) {
+  return (
+    <div className="flex items-center justify-end gap-[15px] w-[300px]">
+      <button className="relative w-[86px] h-[49px] flex items-center justify-center">
+        <img src={headerAssets.savePill} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-contain" />
+        <span className="relative text-white text-[18.987px] font-medium tracking-[-0.19px] leading-none">
+          Save
+        </span>
+      </button>
+      <RoundIconButton src={headerAssets.playIcon} alt="Play" iconClassName="w-[15px] h-[15px] object-contain ml-0.5" />
+      <RoundIconButton src={headerAssets.settingsIcon} alt="Settings" iconClassName="w-[20px] h-[19px] object-contain" onClick={onSettingsClick} />
+    </div>
+  );
+}
+
+export function Header({ onSettingsClick }: HeaderProps) {
   const { tokens: devTokens } = useDevMode();
 
   return (
@@ -100,7 +117,7 @@ export function Header() {
     >
       <BrandBlock />
       <StepNavigation />
-      <HeaderActions />
+      {onSettingsClick ? <HeaderActionsWithSettings onSettingsClick={onSettingsClick} /> : <HeaderActions />}
     </header>
   );
 }

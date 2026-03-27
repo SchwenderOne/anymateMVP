@@ -1,5 +1,7 @@
 import { useDevMode } from '../context/useDevMode';
-import { X, RotateCcw } from 'lucide-react';
+import { Pencil, RotateCcw, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { FIRST_SCREEN_TOKENS } from '../constants/firstScreenTokens';
 
 /* ── Slider Row ────────────────────────────────────────────── */
 
@@ -54,10 +56,72 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function normalizeGradientInput(value: string) {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return '';
+
+  const declarationMatch = trimmedValue.match(/^background-image\s*:\s*(.+?)\s*;?$/i);
+  return declarationMatch ? declarationMatch[1].trim() : trimmedValue;
+}
+
 /* ── Panel ─────────────────────────────────────────────────── */
 
 export function DevPanel() {
-  const { isOpen, close, overrides, setOverride, resetDefaults } = useDevMode();
+  const {
+    isOpen,
+    close,
+    overrides,
+    setOverride,
+    resetDefaults,
+    savedGradients,
+    addSavedGradient,
+    updateSavedGradient,
+    removeSavedGradient,
+  } = useDevMode();
+  const [gradientInput, setGradientInput] = useState(`background-image: ${overrides.gradient};`);
+
+  function applyGradient() {
+    const nextGradient = normalizeGradientInput(gradientInput);
+    if (!nextGradient) return;
+    setOverride('gradient', nextGradient);
+    setGradientInput(`background-image: ${nextGradient};`);
+  }
+
+  function saveGradient() {
+    const nextGradient = normalizeGradientInput(gradientInput);
+    if (!nextGradient) return;
+    addSavedGradient(nextGradient);
+    setOverride('gradient', nextGradient);
+    setGradientInput(`background-image: ${nextGradient};`);
+  }
+
+  function resetPanelDefaults() {
+    resetDefaults();
+    setGradientInput(`background-image: ${FIRST_SCREEN_TOKENS.gradients.warmBackground};`);
+  }
+
+  function selectSavedGradient(gradient: string) {
+    setGradientInput(`background-image: ${gradient};`);
+    setOverride('gradient', gradient);
+  }
+
+  function updateGradient(existingGradient: string) {
+    const nextGradient = normalizeGradientInput(gradientInput);
+    if (!nextGradient) return;
+    updateSavedGradient(existingGradient, nextGradient);
+    setGradientInput(`background-image: ${nextGradient};`);
+  }
+
+  function deleteGradient(gradient: string) {
+    const fallbackGradient = savedGradients.find((savedGradient) => savedGradient !== gradient) ?? FIRST_SCREEN_TOKENS.gradients.warmBackground;
+
+    removeSavedGradient(gradient);
+
+    if (overrides.gradient === gradient) {
+      setOverride('gradient', fallbackGradient);
+      setGradientInput(`background-image: ${fallbackGradient};`);
+    }
+  }
 
   return (
     <>
@@ -116,10 +180,31 @@ export function DevPanel() {
                 label="Transparency"
                 value={overrides.headerTransparency}
                 min={0}
-                max={50}
+                max={100}
                 step={1}
                 unit="%"
                 onChange={(v) => setOverride('headerTransparency', v)}
+              />
+            </Section>
+
+            <Section title="Sidebar">
+              <SliderRow
+                label="Transparency"
+                value={overrides.sidebarTransparency}
+                min={0}
+                max={100}
+                step={1}
+                unit="%"
+                onChange={(v) => setOverride('sidebarTransparency', v)}
+              />
+              <SliderRow
+                label="Generate Button"
+                value={overrides.generateButtonTransparency}
+                min={0}
+                max={100}
+                step={1}
+                unit="%"
+                onChange={(v) => setOverride('generateButtonTransparency', v)}
               />
             </Section>
 
@@ -128,7 +213,7 @@ export function DevPanel() {
                 label="Transparency"
                 value={overrides.overlayTransparency}
                 min={0}
-                max={50}
+                max={100}
                 step={1}
                 unit="%"
                 onChange={(v) => setOverride('overlayTransparency', v)}
@@ -149,7 +234,7 @@ export function DevPanel() {
                 label="Transparency"
                 value={overrides.canvasTransparency}
                 min={0}
-                max={50}
+                max={100}
                 step={1}
                 unit="%"
                 onChange={(v) => setOverride('canvasTransparency', v)}
@@ -162,17 +247,85 @@ export function DevPanel() {
                   CSS Gradient
                 </label>
                 <textarea
-                  value={overrides.gradient}
-                  onChange={(e) => setOverride('gradient', e.target.value)}
-                  placeholder="linear-gradient(45deg, #ff9a9e 0%, #fad0c4 100%)"
+                  value={gradientInput}
+                  onChange={(e) => setGradientInput(e.target.value)}
+                  placeholder="background-image: linear-gradient(120deg, #f6d365 0%, #fda085 100%);"
                   className="w-full h-[80px] bg-white/60 border border-black/10 rounded-[10px] px-3 py-2.5 text-[12px] font-mono text-[#343434] placeholder:text-[#343434]/30 resize-none outline-none focus:border-[#1985cc]/50 transition-colors"
                   spellCheck={false}
                 />
+                <div className="flex gap-2">
+                  <button
+                    onClick={applyGradient}
+                    className="flex-1 h-[36px] rounded-[10px] bg-[#1985cc] text-white text-[12px] font-semibold transition-colors hover:bg-[#1570ad]"
+                  >
+                    Apply
+                  </button>
+                  <button
+                    onClick={saveGradient}
+                    className="flex-1 h-[36px] rounded-[10px] bg-black/5 text-[#343434] text-[12px] font-semibold transition-colors hover:bg-black/10"
+                  >
+                    Save to Library
+                  </button>
+                </div>
                 {/* Preview swatch */}
                 <div
                   className="w-full h-[32px] rounded-[8px] border border-black/10"
-                  style={{ backgroundImage: overrides.gradient }}
+                  style={{ backgroundImage: normalizeGradientInput(gradientInput) || overrides.gradient }}
                 />
+                <div className="flex flex-col gap-2 pt-1">
+                  <span className="text-[11px] font-semibold tracking-[0.4px] uppercase text-[#343434]/45">
+                    Saved Gradients
+                  </span>
+                  <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                    {savedGradients.map((gradient, index) => {
+                      const isActive = gradient === overrides.gradient;
+
+                      return (
+                        <div
+                          key={`${gradient}-${index}`}
+                          className={`w-full rounded-[10px] border px-2.5 py-2 transition-colors ${
+                            isActive ? 'border-[#1985cc]/60 bg-[#1985cc]/8' : 'border-black/10 bg-white/45'
+                          }`}
+                        >
+                          <button
+                            onClick={() => selectSavedGradient(gradient)}
+                            className="w-full text-left"
+                          >
+                          <div
+                            className="h-[28px] w-full rounded-[7px] border border-black/10 mb-2"
+                            style={{ backgroundImage: gradient }}
+                          />
+                          <span className="block text-[10px] leading-[1.35] text-[#343434]/72 font-mono break-all">
+                            {gradient}
+                          </span>
+                          </button>
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              onClick={() => setGradientInput(`background-image: ${gradient};`)}
+                              className="flex-1 h-[30px] rounded-[8px] bg-black/5 text-[#343434] text-[11px] font-semibold transition-colors hover:bg-black/10"
+                            >
+                              Load
+                            </button>
+                            <button
+                              onClick={() => updateGradient(gradient)}
+                              className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-black/5 text-[#343434] transition-colors hover:bg-black/10"
+                              aria-label="Update saved gradient"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => deleteGradient(gradient)}
+                              className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-black/5 text-[#343434] transition-colors hover:bg-black/10"
+                              aria-label="Delete saved gradient"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </Section>
           </div>
@@ -180,7 +333,7 @@ export function DevPanel() {
           {/* Footer */}
           <div className="px-6 py-4 border-t border-black/5">
             <button
-              onClick={resetDefaults}
+              onClick={resetPanelDefaults}
               className="w-full h-[40px] rounded-[10px] bg-black/5 hover:bg-black/10 transition-colors flex items-center justify-center gap-2 text-[13px] font-medium text-[#343434]/70"
             >
               <RotateCcw className="w-3.5 h-3.5" />

@@ -1,8 +1,20 @@
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { FIRST_SCREEN_ASSETS } from '../constants/firstScreenAssets';
 import { FIRST_SCREEN_TOKENS } from '../constants/firstScreenTokens';
+import { useDevMode } from '../context/useDevMode';
 
 const sidebarAssets = FIRST_SCREEN_ASSETS.sidebar;
 const tokens = FIRST_SCREEN_TOKENS;
+const DEFAULT_SIDEBAR_WIDTH = Number.parseInt(tokens.layout.sidebarWidth, 10);
+const MIN_SIDEBAR_WIDTH = 300;
+const MAX_SIDEBAR_WIDTH = 540;
+const COLLAPSE_THRESHOLD = 180;
+const COLLAPSED_WAND_LEFT = 44;
+const COLLAPSED_WAND_TOP = 26;
+
+function clampSidebarWidth(width: number) {
+  return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, width));
+}
 
 function SectionLabel({ title }: { title: string }) {
   return (
@@ -118,12 +130,12 @@ function ReferenceUpload() {
   );
 }
 
-function FinishSection() {
+function FinishSection({ opacity }: { opacity: number }) {
   return (
     <div className="mt-8">
       <SectionLabel title="Finish" />
       <div className="flex justify-center w-full pt-2">
-        <button className="relative w-[181px] h-[70px] flex items-center justify-center">
+        <button className="relative w-[181px] h-[70px] flex items-center justify-center" style={{ opacity }}>
           <img
             src={sidebarAssets.generatePill}
             alt=""
@@ -140,30 +152,187 @@ function FinishSection() {
 }
 
 export function Sidebar() {
+  const { tokens: devTokens } = useDevMode();
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStateRef = useRef<{ startX: number; startWidth: number; moved: boolean } | null>(null);
+  const expandedWidthRef = useRef(DEFAULT_SIDEBAR_WIDTH);
+  const sidebarWidthRef = useRef(DEFAULT_SIDEBAR_WIDTH);
+  const isCollapsedRef = useRef(false);
+
+  const collapseSidebar = useCallback(() => {
+    if (sidebarWidth > COLLAPSE_THRESHOLD) {
+      expandedWidthRef.current = clampSidebarWidth(sidebarWidth);
+    }
+    isCollapsedRef.current = true;
+    sidebarWidthRef.current = 0;
+    setIsCollapsed(true);
+    setSidebarWidth(0);
+  }, [sidebarWidth]);
+
+  const expandSidebar = useCallback((nextWidth = expandedWidthRef.current) => {
+    const resolvedWidth = clampSidebarWidth(nextWidth);
+    expandedWidthRef.current = resolvedWidth;
+    isCollapsedRef.current = false;
+    sidebarWidthRef.current = resolvedWidth;
+    setIsCollapsed(false);
+    setSidebarWidth(resolvedWidth);
+  }, []);
+
+  const finalizeSidebarWidth = useCallback((nextWidth: number) => {
+    if (nextWidth <= COLLAPSE_THRESHOLD) {
+      collapseSidebar();
+      return;
+    }
+
+    const resolvedWidth = clampSidebarWidth(nextWidth);
+    expandedWidthRef.current = resolvedWidth;
+    isCollapsedRef.current = false;
+    sidebarWidthRef.current = resolvedWidth;
+    setIsCollapsed(false);
+    setSidebarWidth(resolvedWidth);
+  }, [collapseSidebar]);
+
+  const resetSidebarWidth = useCallback(() => {
+    expandSidebar(DEFAULT_SIDEBAR_WIDTH);
+  }, [expandSidebar]);
+
+  useEffect(() => {
+    function handlePointerMove(event: PointerEvent) {
+      const dragState = dragStateRef.current;
+      if (!dragState) return;
+
+      const deltaX = event.clientX - dragState.startX;
+      if (Math.abs(deltaX) > 3) {
+        dragState.moved = true;
+      }
+
+      const nextWidth = dragState.startWidth + deltaX;
+      if (nextWidth <= COLLAPSE_THRESHOLD) {
+        isCollapsedRef.current = true;
+        sidebarWidthRef.current = 0;
+        setIsCollapsed(true);
+        setSidebarWidth(0);
+        return;
+      }
+
+      const resolvedWidth = clampSidebarWidth(nextWidth);
+      expandedWidthRef.current = resolvedWidth;
+      isCollapsedRef.current = false;
+      sidebarWidthRef.current = resolvedWidth;
+      setIsCollapsed(false);
+      setSidebarWidth(resolvedWidth);
+    }
+
+    function handlePointerUp() {
+      const dragState = dragStateRef.current;
+      if (!dragState) return;
+
+      dragStateRef.current = null;
+      setIsDragging(false);
+
+      if (!dragState.moved) {
+        if (isCollapsedRef.current) {
+          expandSidebar();
+        } else {
+          collapseSidebar();
+        }
+        return;
+      }
+
+      finalizeSidebarWidth(sidebarWidthRef.current);
+    }
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [collapseSidebar, expandSidebar, finalizeSidebarWidth]);
+
+  function handleResizePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+    dragStateRef.current = {
+      startX: event.clientX,
+      startWidth: isCollapsed ? expandedWidthRef.current : sidebarWidth,
+      moved: false,
+    };
+    setIsDragging(true);
+  }
+
   return (
-    <aside
-      className="h-full flex flex-col flex-shrink-0 pt-4 px-6 pb-12 overflow-y-auto no-scrollbar relative z-30"
-      style={{ width: tokens.layout.sidebarWidth }}
+    <div
+      className="relative h-full flex-shrink-0 overflow-visible transition-[width,margin-right] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      style={{
+        width: `${sidebarWidth}px`,
+        marginRight: isCollapsed ? '0px' : '-2px',
+        transitionDuration: isDragging ? '0ms' : '250ms',
+      }}
     >
-      <div
-        className="absolute inset-y-0 left-0 -right-3 rounded-tr-[12px] border-r border-[#dcdcdc]/35 pointer-events-none"
-      />
+      <aside
+        className="absolute inset-0 h-full rounded-tr-[12px] border-[2px] transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{
+          backgroundColor: devTokens.sidebarSurface,
+          backdropFilter: `blur(${tokens.blur.sidebar})`,
+          borderColor: tokens.colors.whiteBorder,
+          opacity: isCollapsed ? 0 : 1,
+          transform: isCollapsed ? 'translateX(-18px) scaleX(0.94)' : 'translateX(0) scaleX(1)',
+          pointerEvents: isCollapsed ? 'none' : 'auto',
+          transitionDuration: isDragging ? '0ms' : '250ms',
+        }}
+      >
+        <div className="relative z-10 flex h-full flex-col overflow-y-auto px-6 pb-12 pt-4 no-scrollbar">
+          <CreateCharacterButton />
+          <PromptSection />
 
-      <div className="relative z-10 flex flex-col h-full">
-        <CreateCharacterButton />
-        <PromptSection />
+          <div className="relative mb-auto flex w-full flex-col">
+            <SectionLabel title="Reference" />
+            <ReferenceUpload />
+          </div>
 
-        <div className="flex flex-col mb-auto w-full relative">
-          <SectionLabel title="Reference" />
-          <ReferenceUpload />
+          <FinishSection opacity={devTokens.generateButtonOpacity} />
         </div>
+      </aside>
 
-        <FinishSection />
-      </div>
+      <button
+        type="button"
+        onPointerDown={handleResizePointerDown}
+        onDoubleClick={resetSidebarWidth}
+        className="absolute top-1/2 z-[100] h-[45px] w-[24px] -translate-y-1/2 cursor-ew-resize transition-all duration-200 hover:brightness-95"
+        style={{
+          right: '-12px',
+          opacity: isCollapsed ? 0 : 1,
+          transform: `translateY(-50%) scale(${isDragging ? 1.04 : 1})`,
+          pointerEvents: isCollapsed ? 'none' : 'auto',
+        }}
+        aria-label={isCollapsed ? 'Expand sidebar' : 'Resize or collapse sidebar'}
+      >
+        <img src={sidebarAssets.sidebarHandle} alt="" aria-hidden="true" className="h-full w-full object-contain" />
+      </button>
 
-      <div className="absolute top-1/2 -translate-y-1/2 right-[-12px] w-[24px] h-[45px] cursor-pointer z-[100] hover:brightness-95 transition-all">
-        <img src={sidebarAssets.sidebarHandle} alt="Toggle Sidebar" className="w-full h-full object-contain" />
-      </div>
-    </aside>
+      <button
+        type="button"
+        onClick={() => expandSidebar()}
+        className="absolute z-[110] flex h-[44px] w-[44px] items-center justify-center rounded-full shadow-sm transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{
+          left: `${COLLAPSED_WAND_LEFT}px`,
+          top: `${COLLAPSED_WAND_TOP}px`,
+          backgroundColor: tokens.colors.glassSurface,
+          border: `1.8px solid ${tokens.colors.controlBorder}`,
+          backdropFilter: `blur(${tokens.blur.glass})`,
+          opacity: isCollapsed ? 1 : 0,
+          transform: isCollapsed ? 'scale(1) translateX(0)' : 'scale(0.8) translateX(-12px)',
+          pointerEvents: isCollapsed ? 'auto' : 'none',
+        }}
+        aria-label="Expand sidebar"
+      >
+        <img src={sidebarAssets.createCharacterIcon} alt="" aria-hidden="true" className="h-[18px] w-[18px] object-contain" />
+      </button>
+    </div>
   );
 }

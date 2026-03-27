@@ -2,11 +2,16 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { CanvasArea } from './components/CanvasArea';
 import { DevPanel } from './components/DevPanel';
+import { SettingsScreen } from './components/SettingsScreen';
 import { useDevMode } from './context/useDevMode';
 import { DevModeProvider } from './context/DevModeContext';
+import { useState } from 'react';
+
+type AppScreen = 'main' | 'settings';
 
 function AppContent() {
   const { tokens } = useDevMode();
+  const [screen, setScreen] = useState<AppScreen>('main');
 
   return (
     <div
@@ -22,11 +27,19 @@ function AppContent() {
         }}
       />
 
-      <Header />
-      <div className="flex-1 flex flex-row overflow-hidden w-full h-full relative z-[1]">
-        <Sidebar />
-        <CanvasArea />
-      </div>
+      {screen === 'settings' ? (
+        <div className="relative z-[1]">
+          <SettingsScreen onExit={() => setScreen('main')} />
+        </div>
+      ) : (
+        <>
+          <Header onSettingsClick={() => setScreen('settings')} />
+          <div className="flex-1 flex flex-row overflow-hidden w-full h-full relative z-[1]">
+            <Sidebar />
+            <CanvasArea />
+          </div>
+        </>
+      )}
 
       <DevPanel />
     </div>
