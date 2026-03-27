@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 24 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="change sidebar size/width">
+<foreignObject x="-120.626" y="-120.626" width="265.252" height="286.252"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(60.31px);clip-path:url(#bgblur_0_0_51_clip_path);height:100%;width:100%"></div></foreignObject><g id="Rectangle 125" data-figma-bg-blur-radius="120.626">
+<rect y="45" width="45" height="24" rx="12" transform="rotate(-90 0 45)" fill="var(--fill-0, white)" fill-opacity="0.84"/>
+<rect x="1" y="44" width="43" height="22" rx="11" transform="rotate(-90 1 44)" stroke="var(--stroke-0, #DCDCDC)" stroke-opacity="0.33" stroke-width="2"/>
+</g>
+<path id="Vector" d="M13.9663 30.5731C14.194 30.7885 14.4714 30.9043 14.795 30.9043C15.4618 30.9043 16 30.3866 16 29.7434C16 29.4219 15.8679 29.1196 15.617 28.8913L9.82579 23.4503L15.617 18.0125C15.8713 17.781 16 17.4755 16 17.1604C16 16.5205 15.4618 15.9995 14.795 15.9995C14.4648 15.9995 14.1908 16.1089 13.9663 16.334L7.44571 22.4984C7.14857 22.7846 7.0066 23.0837 7 23.4503C7 23.8104 7.14197 24.1127 7.44571 24.4021L13.9663 30.5731Z" fill="var(--fill-0, #999999)"/>
+</g>
+<defs>
+<clipPath id="bgblur_0_0_51_clip_path" transform="translate(120.626 120.626)"><rect y="45" width="45" height="24" rx="12" transform="rotate(-90 0 45)"/>
+</clipPath></defs>
+</svg>
